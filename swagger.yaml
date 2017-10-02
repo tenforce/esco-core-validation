@@ -1,0 +1,352 @@
+swagger: "2.0"
+info:
+  description: This microservice runs validation queries. The where clause of the queries are defined in a configuration file called `rules.json`. The microservice builds an insert query of it per type and per language (depends on the configuration). The types  are configured in the `types.json`.
+  version: 1.0.0
+  title: Validation Microservice
+  contact:
+    email: nora.szepes@tenforce.com
+basePath: /
+tags:
+- name: validation
+  description: Validation rule
+- name: run
+  description: Running a validation rule
+- name: result
+  description: result of a validation query
+schemes:
+- http
+paths:
+  /validations/:
+    get:
+      tags:
+      - validation
+      summary: Returns validation queries and their details
+      description: Returns a subset of the `rules.json` configuration file. It can only return with status 200.
+      produces:
+      - application/json
+      parameters:
+        - name: platform
+          in: query
+          required: true
+          description: A string containing all needed platforms separated by commas. The microservice will only send back the rules flagged by any of these platforms.
+          type: string
+      responses:
+        200:
+          schema:
+            $ref: '#/definitions/Validation'
+          description:  On succes it returns an array of validations (either contaning validations or just an empty array)
+
+  /validation/{validationId}/description:
+    get:
+      tags:
+      - validation
+      summary: Returns the description of a validation rule
+      description: Returns the description of the chosen validation rule.
+      produces:
+      - application/json
+      parameters:
+      - name: validationId
+        in: path
+        description: Validation rule's id.
+        required: true
+        type: string
+      responses:
+        200:
+          schema:
+            $ref: '#/definitions/ValidationDescription'
+          description: On succes it returns the description
+        404:
+          schema:
+            $ref: '#/definitions/Error'
+          description: Invalid validationId
+
+  /validation/{validationId}/run:
+    post:
+      tags:
+      - run
+      summary: Run a validation rule
+      description: Triggers the microservice to run a validation rule
+      produces:
+      - application/json
+      parameters:
+      - name: validationId
+        in: path
+        description: Validation rule's id
+        required: true
+        type: string
+      responses:
+        200:
+          schema:
+            $ref: '#/definitions/ValidationMetaStillRunning'
+          description: A query is still running
+        202:
+          schema:
+            $ref: '#/definitions/ValidationMetaAck'
+          description: Accepted request, check on another endpoint
+        404:
+          schema:
+            $ref: '#/definitions/Error'
+          description: Invalid validationId
+
+  /validation/run:
+    post:
+      tags:
+      - run
+      summary: Run a subset of the validation rules
+      description: "Triggers the microservice to run a subset of the validation rules. Alternate usage: keys parameter: run only a subset of the rules. If it's not provided, it will run all the rules. graph parameter: to validate a graph, use this parameter to send the graph's uuid. The microservice will run the validation on this graph and update the metadata of the application graph at the end to mark the submitted graph as valid or invalid. It is possible to validate a graph with a certion set of rules by using both parameters."
+      produces:
+      - application/json
+      parameters:
+      - name: graph
+        in: query
+        description: Graph's uuid, that needs to be validated.
+        type: string
+      - name: keys
+        in: query
+        description: A string containing all needed keys separated by commas. If keys are submitted, the microservice will only run these rules.
+        type: string
+      responses:
+        202:
+          schema:
+            $ref: '#/definitions/ValidationMetaAck'
+          description: Accepted request, check on another endpoint
+        404:
+          schema:
+            $ref: '#/definitions/ErrorInvalidGraph'
+          description: Invalid graph id
+
+  /validation/result:
+    get:
+      tags:
+      - result
+      summary: Result of a validation query
+      description: Results of a validation query.
+      produces:
+      - application/json
+      parameters:
+      - name: graph
+        in: query
+        description: Graph's uuid, that needs to be validated.
+        type: string
+      - name: keys
+        in: query
+        description: A string containing all needed keys separated by commas. If keys are submitted, the microservice will only run these rules.
+        type: string
+      - name: time
+        in: query
+        description: Time of the results you are looking for. Only required if there is no graph uuid.
+        required: true
+        type: string
+      - name: date
+        in: query
+        description: Date of the results you are looking for. Only required if there is no graph uuid.
+        required: true
+        type: string
+      responses:
+        200:
+          description: If a query is still running, it will return a status message with "still working". If a graph UUID was provided, it will return the status of the graph (valid/invalid). If it's finished, it will return a message "finished" with the timestamp.
+        404:
+          schema:
+            $ref: '#/definitions/ErrorInvalidGraphStatus'
+          description: No status for this graph.
+        500:
+          description: If there was an error during execution, it will return the error message (for example from the db). Otherwise if there is no time was date provided, it will also return an error message about the missing parameter.
+
+
+
+
+definitions:
+  Validation:
+    type: object
+    description: A validation resource.
+    properties:
+      data:
+        type: array
+        description: JSON API wrapper object.
+        items:
+          type: object
+          description: The actual list of items.
+          properties:
+            id:
+              type: string
+              description: Id of the rule.
+            type:
+              type: string
+              description: Type of resource.
+            attributes:
+              type: object
+              description: Attributes of the resurce.
+              properties:
+                name:
+                  type: string
+                  description: Name of the rule
+                description:
+                  type: string
+                  description: Description of the rule.
+                show:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of platforms where the rules will be shown.
+                types:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of types what will be checked by this rule.
+                parameters:
+                  type: array
+                  items:
+                    type: string
+                  description: Return parameters of the rule.
+                query:
+                  type: string
+                  description: Where clause of the rule's query.
+                template:
+                  type: object
+                  description: Template query for the rule's query.
+                  properties:
+                    string:
+                      type: string
+                      description: String to grep on in the rule's query.
+                    parameter:
+                      type: string
+                      description: Return parameter f the template query.
+                    query:
+                      type: string
+                      description: Template query.
+    example:
+      data:
+        - id: multiple-prefterms
+          type: validation
+          attributes:
+            name: Multiple prefterms
+            description: Every occupation should have only one preferred term in every language.
+            show: translation
+            types:
+            - occupation
+            parameters:
+            - uuid
+            - preflabel
+            - language
+            query: "{SELECT ?concept ?uuid ?language ?preflabel COUNT(?prefterm) from <http://mu.semte.ch/application> where { ?concept a <change_the_type>. ?concept mu:uuid ?uuid. ?concept skosxl:prefLabel / skosxl:literalForm ?preflabel . FILTER(lang(?preflabel) = 'en') ?concept skosxl:prefLabel ?prefterm . ?prefterm skosxl:literalForm ?label. BIND(lang(?label) as ?language) FILTER(?language = 'changeLanguage') } GROUP BY ?concept ?language ?preflabel ?uuid HAVING(COUNT(?prefterm) > 1) }"
+            template:
+                string: changeLanguage
+                parameter: template
+                query: "select ?template where {<http://mu.semte.ch/application> <http://translation.escoportal.eu/supportedLanguage> ?template .}"
+  ValidationDescription:
+    type: object
+    description: A description of a validation.
+    properties:
+      data:
+        type: object
+        description:  JSON API wrapper object.
+        properties:
+          id:
+            type: string
+            description: Id of the rule.
+          type:
+            type: string
+            description: Type of resource.
+          attributes:
+            type: object
+            description: Attributes of resource.
+            properties:
+              description:
+                type: string
+                description: Description of the rule.
+    example:
+      data:
+        id: multiple-prefterms
+        type: description
+        attributes:
+          description: Every occupation should have only one preferred term in every language.
+  ValidationMetaAck:
+    type: object
+    description: A status message wrapped in a meta object to show that the microservice accepted the request and started running a query.
+    properties:
+      meta:
+        type: object
+        description:  JSON API wrapper object.
+        properties:
+          status:
+            type: string
+            description: Status message.
+          attributes:
+            type: object
+            description: Additional attributes for the status message.
+            properties:
+              timestamp:
+                type: string
+                description: Timestamp of the run.
+    example:
+      meta:
+          status: The call was accepted, the query started to run. Check back on /validation/results for more details.
+          attributes:
+            timestamp: "2016-11-03 14:09:43"
+  ValidationMetaStillRunning:
+    type: object
+    description: A status message wrapped in a meta object to show that a query is already running.
+    properties:
+      meta:
+        type: object
+        description:  JSON API wrapper object.
+        properties:
+          status:
+            type: string
+            description: Status message.
+    example:
+      meta:
+          status: A query is already running, try again later.
+  Error:
+    type: object
+    description: Default error message.
+    properties:
+      errors:
+        type: array
+        description:  JSON API wrapper object.
+        items:
+          type: object
+          properties:
+            title:
+              type: string
+              description: Title of error.
+    example:
+      errors:
+        - title: There is no validation rule with this ID.
+
+  ErrorInvalidGraph:
+    type: object
+    description: Invalid graph error message.
+    properties:
+      errors:
+        type: array
+        description:  JSON API wrapper object.
+        items:
+          type: object
+          properties:
+            title:
+              type: string
+              description: Title of error.
+    example:
+      errors:
+        - title: Can not find the graph
+
+  ErrorInvalidGraphStatus:
+    type: object
+    description: Invalid graph error message.
+    properties:
+      errors:
+        type: array
+        description:  JSON API wrapper object.
+        items:
+          type: object
+          properties:
+            title:
+              type: string
+              description: Title of error.
+    example:
+      errors:
+        - title: Can not find status for this graph.
+
+
+ 

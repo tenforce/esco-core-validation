@@ -1,0 +1,112 @@
+{
+    "validations": {
+        "rule0": {
+            "name": "Concepts without pref term",
+            "description": "Every concept should have a preferred term in every language.",
+            "show":["translation","etms"],
+            "types": [
+                "concept"
+            ],
+            "parameters": [
+                "uuid", "language"
+            ],
+            "query": "?concept mu:uuid ?uuid ; a <change_the_type> .  <http://mu.semte.ch/application> translation:supportedLanguage ?language . FILTER NOT EXISTS { ?concept skosxl:prefLabel / skosxl:literalForm ?label . FILTER(lang(?label) = ?language)  }"
+        },
+        "rule2": {
+            "name": "Female pref term must be standard female",
+            "description": "If a preferred term is female, it must also be standard female.",
+            "show":["translation","etms"],
+            "types": [
+                "concept"
+            ],
+            "parameters": [
+                "uuid"
+            ],
+            "query": "?s skosxl:prefLabel ?o  ; mu:uuid ?uuid ; a <change_the_type> ; a esco:Occupation . filter not exists { ?o esco:hasLabelRole escolabelrole:iC.genderStandardFemale }  ?o esco:hasLabelRole escolabelrole:iC.genderFemale ."
+        },
+        "rule3": {
+            "name": "Male pref term must be standard male",
+            "description": "If a preferred term is male, it must also be standard male.",
+            "show":["translation","etms"],
+            "types": [
+                "concept"
+            ],
+            "parameters": [
+                "uuid"
+            ],
+            "query": "?s skosxl:prefLabel ?o ;  mu:uuid ?uuid ; a <change_the_type> ; a esco:Occupation . filter not exists { ?o esco:hasLabelRole escolabelrole:iC.genderStandardMale } ?o esco:hasLabelRole escolabelrole:iC.genderMale ."
+        },
+        "rule4male": {
+            "name": "At most one standard male term",
+            "description": "Every concept must have at most one standard male term.",
+            "show":["translation","etms"],
+            "types": [
+                "concept"
+            ],
+            "parameters": [
+                "uuid"
+            ],
+            "query": "?s a <change_the_type>  ; a esco:Occupation ; mu:uuid ?uuid ; (skosxl:prefLabel|skosxl:altLabel) ?label1  ; (skosxl:prefLabel|skosxl:altLabel) ?label2 . ?label1 esco:hasLabelRole ?role1 . ?label2 esco:hasLabelRole ?role2 . FILTER (?label1 != ?label2 && ?role1 IN (escolabelrole:iC.genderStandardMale) && ?role1 = ?role2)"
+        },
+        "rule4female": {
+            "name": "At most one standard female term",
+            "description": "Every concept must have at most one standard female term.",
+            "show":["translation","etms"],
+            "types": [
+                "concept"
+            ],
+            "parameters": [
+                "uuid"
+            ],
+            "query": "?s a <change_the_type>  ; a esco:Occupation ; mu:uuid ?uuid ; (skosxl:prefLabel |skosxl:altLabel ) ?label1  ; (skosxl:prefLabel |skosxl:altLabel ) ?label2 . ?label1 esco:hasLabelRole ?role1 . ?label2 esco:hasLabelRole ?role2 . FILTER (?label1 != ?label2 && ?role1 IN (escolabelrole:iC.genderStandardFemale) && ?role1 = ?role2)"
+        },
+        "rule5": {
+            "name": "Pref terms should be neutral",
+            "description": "Finds every preferred terms that does not have the neutral gender role.",
+            "show":["translation","etms"],
+            "types": [
+                "label"
+            ],
+            "parameters": [
+                "uuid"
+            ],
+            "query": "?s skosxl:prefLabel ?label . ?label mu:uuid ?uuid ; a <change_the_type> . filter (not exists {?label esco:hasLabelRole escolabelrole:iC.genderNeutral})"
+        },
+        "rule9": {
+            "name": "Concepts without tasks",
+            "description": "Returns the concepts that are missing a task for some language.",
+            "show":["translation","etms"],
+            "types": [
+                "concept"
+            ],
+            "parameters": [
+                "uuid"
+            ],
+            "query": "?concept a esco:Occupation ; mu:uuid ?uuid . FILTER NOT EXISTS { ?concept a esco:GroupConcept . } <http://mu.semte.ch/application> translation:supportedLanguage ?language . FILTER NOT EXISTS { ?task a translationvocab:Task . ?task translationvocab:language ?language . ?task translationvocab:concept ?concept . }"
+        },
+        "rule10": {
+          "name": "Mapping's mapsFrom URI does not exists",
+          "description": "Returns the mappings that have a non-existing source.",
+          "show":["mapping"],
+          "types": [
+              "mapping"
+          ],
+          "parameters": [
+              "uuid"
+          ],
+          "query": "?x a <change_the_type> ; mu:uuid ?uuid ; mp:mapsFrom ?concept . FILTER NOT EXISTS {GRAPH <application_graph> {?concept ?p ?o}}"
+        },
+        "rule11": {
+          "name": "Mapping's mapsTo URI does not exists",
+          "description": "Returns the mappings that have a non-existing destination.",
+          "show":["mapping"],
+          "types": [
+              "mapping"
+          ],
+          "parameters": [
+              "uuid"
+          ],
+          "query": "?x a <change_the_type> ; mu:uuid ?uuid ; mp:mapsTo ?concept . FILTER NOT EXISTS {GRAPH <application_graph> {?concept ?p ?o}}"
+        }
+    }
+}

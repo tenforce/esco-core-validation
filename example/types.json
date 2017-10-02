@@ -1,0 +1,19 @@
+{
+    "types": {
+        "collection": "http://www.w3.org/2004/02/skos/core#Collection",
+        "concept": "http://www.w3.org/2004/02/skos/core#Concept",
+        "conceptscheme": "http://www.w3.org/2004/02/skos/core#ConceptScheme",
+        "conceptschemeesco": "http://data.europa.eu/esco/model#ConceptScheme",
+        "label": "http://www.w3.org/2008/05/skos-xl#Label",
+        "labelrole": "http://data.europa.eu/esco/model#LabelRole",
+        "memberconcept": "http://data.europa.eu/esco/model#MemberConcept",
+        "occupation": "http://data.europa.eu/esco/model#Occupation",
+        "prefLabel": "http://www.w3.org/2008/05/skos-xl#prefLabel",
+        "qualification": "http://data.europa.eu/esco/model#Qualification",
+        "relationship": "http://data.europa.eu/esco/model#Relationship",
+        "relationshiptype": "http://data.europa.eu/esco/model#RelationshipType",
+        "skill": "http://data.europa.eu/esco/model#Skill",
+        "skillcompetencetype": "http://data.europa.eu/esco/model#SkillCompetenceType",
+        "mapping": "http://sem.tenforce.com/vocabularies/mapping-platform/Mapping"
+    }
+}
